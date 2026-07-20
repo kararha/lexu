@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Cosmic Fragrances",
+  "description": "An interactive, high-end sensory perfume showcase and fragrance customization lab set against an immersive 3D cosmic scroll.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

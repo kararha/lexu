@@ -6,6 +6,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { motion, AnimatePresence } from 'motion/react';
+import { ShoppingBag, Wand2, Compass, ChevronDown, Plus, Sparkles, X } from 'lucide-react';
+import { fragrances } from '../../data';
+import { CartDrawer } from '../CartDrawer';
+import { CustomScentLab } from '../CustomScentLab';
+import { ScentDetailPanel } from '../ScentDetailPanel';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,6 +30,64 @@ export const Component = () => {
   const [currentSection, setCurrentSection] = useState(1);
   const [isReady, setIsReady] = useState(false);
   const totalSections = 2;
+
+  // Cart & Lab states
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aura-cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('aura-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isLabOpen, setIsLabOpen] = useState(false);
+  const [detailFragrance, setDetailFragrance] = useState(null);
+
+  const handleAddToCart = (item) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.id === item.id);
+      if (existing) {
+        return prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
+      }
+      return [...prev, { ...item, quantity: 1 }];
+    });
+  };
+
+  const handleUpdateQuantity = (id, newQty) => {
+    if (newQty <= 0) {
+      handleRemoveItem(id);
+      return;
+    }
+    setCart((prev) => prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item)));
+  };
+
+  const handleRemoveItem = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+  };
+
+  const handleAddDirect = (scent) => {
+    const newItem = {
+      id: `${scent.id}-100ml`,
+      name: `${scent.name} Eau de Parfum`,
+      size: '100ml',
+      price: scent.price100ml,
+      isCustom: false,
+    };
+    handleAddToCart(newItem);
+    setIsCartOpen(true);
+  };
+
+  const activeScent = fragrances[currentSection] || fragrances[0];
   
   const threeRefs = useRef({
     scene: null,
@@ -589,6 +653,24 @@ export const Component = () => {
                 we shape the future of tomorrow
               </p>
             </div>
+
+            {/* Perfume Actions for Section 0 */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 pointer-events-auto">
+              <button
+                onClick={() => setDetailFragrance(activeScent)}
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-xs font-mono tracking-widest uppercase transition-all duration-300 flex items-center gap-2 text-white cursor-pointer"
+              >
+                <Compass className="w-4 h-4 text-cyan-400" />
+                Explore Scent Profile
+              </button>
+              <button
+                onClick={() => handleAddDirect(activeScent)}
+                className="px-6 py-3 bg-white text-black hover:bg-neutral-200 rounded-full text-xs font-mono tracking-widest uppercase transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Quick Order (100ml)
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -637,7 +719,7 @@ export const Component = () => {
                 {splitTitle(titles[i+1] || 'DEFAULT')}
               </h1>
           
-              <div className="hero-subtitle cosmos-subtitle text-center text-lg md:text-2xl text-white/70 tracking-widest uppercase font-light">
+              <div className="hero-subtitle cosmos-subtitle text-center text-lg md:text-2xl text-white/70 tracking-widest uppercase font-light mb-4">
                 <p className="subtitle-line">
                   {subtitles[i+1].line1}
                 </p>
@@ -645,10 +727,117 @@ export const Component = () => {
                   {subtitles[i+1].line2}
                 </p>
               </div>
+
+              {/* Perfume Actions for Scroll Sections */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 pointer-events-auto">
+                <button
+                  onClick={() => setDetailFragrance(activeScent)}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-xs font-mono tracking-widest uppercase transition-all duration-300 flex items-center gap-2 text-white cursor-pointer"
+                >
+                  <Compass className="w-4 h-4" />
+                  Explore Scent Profile
+                </button>
+                <button
+                  onClick={() => handleAddDirect(activeScent)}
+                  className="px-6 py-3 bg-white text-black hover:bg-neutral-200 rounded-full text-xs font-mono tracking-widest uppercase transition-all duration-300 flex items-center gap-2 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  Quick Order (100ml)
+                </button>
+              </div>
             </section>
           );
         })}
       </div>
+
+      {/* Floating Header */}
+      <header className="fixed top-0 inset-x-0 h-20 z-50 px-6 md:px-12 flex items-center justify-between pointer-events-auto bg-gradient-to-b from-black/80 to-transparent">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col">
+            <span className="font-sans text-xl font-extrabold tracking-[0.3em] text-white">A U R A</span>
+            <span className="font-mono text-[9px] tracking-[0.25em] text-neutral-400 uppercase">Cosmic Fragrances</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsLabOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-mono tracking-wider uppercase transition-all cursor-pointer"
+          >
+            <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Custom Scent Lab</span>
+          </button>
+          
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all flex items-center justify-center text-white cursor-pointer"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-black font-mono text-[9px] font-bold rounded-full flex items-center justify-center border border-black animate-pulse">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Cart Drawer Overlay */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cart={cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+      />
+
+      {/* Scent Customization Lab */}
+      <CustomScentLab
+        isOpen={isLabOpen}
+        onClose={() => setIsLabOpen(false)}
+        onAddToCart={handleAddToCart}
+      />
+
+      {/* Scent Detail Modal Overlay */}
+      <AnimatePresence>
+        {detailFragrance && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.7 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDetailFragrance(null)}
+              className="fixed inset-0 bg-black/90 backdrop-blur-md z-[90] flex items-center justify-center"
+            />
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="fixed inset-x-4 md:inset-x-8 bottom-6 md:bottom-12 max-w-4xl mx-auto z-[91] pointer-events-auto"
+            >
+              <div className="relative">
+                <button
+                  onClick={() => setDetailFragrance(null)}
+                  className="absolute right-4 top-4 p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-neutral-400 hover:text-white transition-all z-20"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <ScentDetailPanel
+                  fragrance={detailFragrance}
+                  onAddToCart={handleAddToCart}
+                  onOpenCustomLab={() => {
+                    setDetailFragrance(null);
+                    setIsLabOpen(true);
+                  }}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
